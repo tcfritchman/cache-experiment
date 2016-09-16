@@ -1,0 +1,16 @@
+
+<!--
+<beans>
+	<cache:annotation-driven />
+	 
+	 <bean id="cacheManager" class="org.springframework.cache.support.SimpleCacheManager">
+        <property name="caches">
+            <set>
+                <bean
+                  class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean"
+                  name="addresses"/>
+            </set>
+        </property>
+    </bean>
+</beans>
+-->
