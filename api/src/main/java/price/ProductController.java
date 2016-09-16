@@ -18,11 +18,16 @@ public class ProductController {
 	private final DBConnection conn;
 	private final LoadingCache<String, Product> cache;
 	private final CacheBackupHandler cacheBackupHandler;
+	private final CacheRebuilder cacheRebuilder;
 	
 	public ProductController() {
 		
 		conn = new DBConnection();
+		
+		//todo: create backup directories here.
+		
 		cacheBackupHandler = new CacheBackupHandler();
+		cacheRebuilder = new CacheRebuilder();
 		
 		cache = CacheBuilder.newBuilder()
 				.maximumSize(Config.CACHE_SIZE)
@@ -33,6 +38,9 @@ public class ProductController {
 						return conn.getProduct(sku);
 					}
 				});	
+		
+		cacheRebuilder.rebuildCache(cache);
+		
 	}
 
     @RequestMapping(value="/product", method=RequestMethod.GET)

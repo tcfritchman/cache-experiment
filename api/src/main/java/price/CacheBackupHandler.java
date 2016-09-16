@@ -62,7 +62,7 @@ public class CacheBackupHandler {
 		FileWriter dataFw = null;
 		try {
 			dataFw = new FileWriter(dataFile);
-			dataFw.write("{Products:[");
+			dataFw.write("[");
 			int cacheSize = cacheMap.size();
 			int i = 0;
 			for (Iterator<Product> cacheIter = cacheMap.values().iterator(); cacheIter.hasNext();) {
@@ -78,7 +78,7 @@ public class CacheBackupHandler {
 				dataFw.write(serialStr);
 				i++;
 			}
-			dataFw.write("]}");
+			dataFw.write("]");
 			//serializedCache.put("Products", serializedCacheArray);
 		} catch (Exception e) {
 			e.printStackTrace();
