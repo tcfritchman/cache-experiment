@@ -3,9 +3,12 @@ package price;
 import java.math.BigDecimal;
 
 public class Product {
-    private final String sku;
-    private final BigDecimal price;
-    private final String type;
+    private String sku;
+    private BigDecimal price;
+    private String type;
+    
+    public Product() {  	
+    }
 
     public Product(String sku, BigDecimal price, String type) {
         this.sku = sku;
@@ -13,7 +16,19 @@ public class Product {
         this.type = type;
     }
 
-    public String getSku() {
+    public void setSku(String sku) {
+		this.sku = sku;
+	}
+
+	public void setPrice(BigDecimal price) {
+		this.price = price;
+	}
+	
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getSku() {
         return sku;
     }
 
@@ -23,5 +38,5 @@ public class Product {
 
     public String getType() {
         return type;
-    } 
+    }    
 }

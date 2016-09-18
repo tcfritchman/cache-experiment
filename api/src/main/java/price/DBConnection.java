@@ -16,7 +16,7 @@ public class DBConnection {
 
 		try { // Connect to DB and get table
 			client = new AmazonDynamoDBClient(new ProfileCredentialsProvider())
-					.withEndpoint("http://localhost:8000");
+					.withEndpoint(Config.DB_URL);
     	
 			dynamoDB = new DynamoDB(client);
     	
@@ -50,5 +50,15 @@ public class DBConnection {
 	    }
 		
 		return new Product(sku, item.getNumber("Price"), item.getString("Type"));
+	}
+	
+
+	public void putProduct(Product product) throws Exception {
+		Item item = new Item()
+				.withPrimaryKey("SKU", product.getSku())
+				.withNumber("Price", product.getPrice())
+				.withString("Type", product.getType());
+		
+		table.putItem(item);
 	}
 }
