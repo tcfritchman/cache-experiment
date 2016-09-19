@@ -41,8 +41,6 @@ function createNewTable() {
 
 function addItemsToTable(remainingItems) {
 
-  //while (remainingItems > 0) {
-
     // Build a list of generated "products" to add to db
     var productItems = [];
 
@@ -54,7 +52,7 @@ function addItemsToTable(remainingItems) {
     }
 
     for (var i = 0; i < itemsInBatch; i++) {
-      productNumber = ("00000000"+(options.numberItems - remainingItems)).slice(-8);
+      productNumber = ("00000000" + (options.numberItems - remainingItems)).slice(-8);
       sku = "THING-" + productNumber;
       // Random price between $1 and $1000
       price = ((Math.random() * 100001) + 100) / 10;
@@ -86,8 +84,6 @@ function addItemsToTable(remainingItems) {
         addItemsToTable(remainingItems);
       }
     });
-
-  //}
 }
 
 function logResult(err, data) {

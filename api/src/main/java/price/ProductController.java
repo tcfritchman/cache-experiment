@@ -1,6 +1,7 @@
 package price;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,22 +28,32 @@ public class ProductController {
 	private final RemovalListener<String, Product> cacheRemovalListener;
 	private final File backupDir;
 	
+	public static AtomicBoolean isRebuildingCache;
+	
 	public ProductController() {
-		// Object which handles making DB connections
-		conn = new DBConnection();
+		
+		conn = new DBConnection(); // Object which handles making DB connections
 		
 		// Create backup directories
 		backupDir = new File(Config.BACKUP_DIR);
-		backupDir.mkdirs();
-		
+		backupDir.mkdirs();	
 		cacheBackupHandler = new CacheBackupHandler(backupDir);
 		
+		try {
+			System.out.println("Duplicating backup files");
+			cacheBackupHandler.copyAndSuffixBackupFiles(".old");
+			System.out.println("Finished duplicating backup files");
+		} catch (Exception e) {
+			System.out.println("Could not make copy of backup files");
+		}
+
 		// When item removed from cache, remove from backup too.
 		cacheRemovalListener = new RemovalListener<String, Product>() {
 			public void onRemoval(RemovalNotification<String, Product> removal) {
 				Product product = removal.getValue();
 				System.out.println("item removed from cache: " + product.getSku());
-		    	cacheBackupHandler.removeItemFromBackup(product);
+				
+				cacheBackupHandler.removeItemFromBackup(product);
 			}
 		};
 		
@@ -66,8 +77,14 @@ public class ProductController {
 					}
 				});	
 		
-		cacheRebuilder = new CacheRebuilder(backupDir);		
-		cacheRebuilder.rebuildCache(cache);		
+		
+		//if (Config.BACKUP_ENABLED && Config.CACHING_ENABLED) {
+			// do this on a new thread...
+			ProductController.isRebuildingCache = new AtomicBoolean(true);
+			cacheRebuilder = new CacheRebuilder(backupDir, cache);	
+			cacheRebuilder.start();
+
+		//}	
 	}
 
     @RequestMapping(value="/product", method=RequestMethod.GET)
@@ -75,20 +92,40 @@ public class ProductController {
     	   	
     	Product product;
     	
-    	try {
-    		product = cache.getUnchecked(sku); // get product item with caching
-    	} catch (Exception e) {
-    		return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
-    	}  	
-
+    	if (ProductController.isRebuildingCache.get()) {
+    		product = cacheBackupHandler.getItemFromBackup(sku);
+    		
+    		if (product == null) { // must get product from DB
+    			try {
+    				conn.makeConnection();
+    			} catch (ResourceUnavailableException e) {
+    	    		return new ResponseEntity<Product>(HttpStatus.SERVICE_UNAVAILABLE);
+    			}
+    			
+    			try {
+    				product = conn.getProduct(sku);
+    			} catch (Exception e) {
+    				System.out.println("Could not get product " + sku + " from database");
+    			}
+    		}
+		
+    	} else { // cache is available
+    		try {
+        		product = cache.getUnchecked(sku);
+        	} catch (Exception e) {
+        		return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
+        	}  	
+    	}
+    	
+		if (product == null) { // Not found in DB
+			return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
+		}
+    	
     	return new ResponseEntity<Product>(product, HttpStatus.OK);  	
     }
     
     @RequestMapping(value="/product/{sku}", method=RequestMethod.PUT)
     public ResponseEntity<String> putProductResponse(@PathVariable(value="sku") String sku, @RequestBody Product product) {
-    	
-    	//BigDecimal priceValue = BigDecimal.valueOf(Double.valueOf(rbPrice)); 	
-    	//Product product = new Product(sku, priceValue, rbType);
     	
     	// try to put in or update DB
     	try {
@@ -100,11 +137,19 @@ public class ProductController {
     	try {
     		conn.putProduct(product);
     	} catch (Exception e) {
-    		System.out.println("couldn't get prodouct from db");
+    		System.out.println("couldn't put product in db");
     		return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     	}    	
 
-    	cache.invalidate(sku);
+    	if (ProductController.isRebuildingCache.get() && cacheBackupHandler.cachedMightContain(sku)) {
+    		
+    		// add to invalid bloom filter so invalid backup doesn't get touched during rebuilding
+    		cacheBackupHandler.removeItemFromBackup(product);
+    		
+    		cacheRebuilder.invalidQueue.add(sku);
+    	} else {
+    		cache.invalidate(sku);
+    	}
     	
     	return new ResponseEntity<String>(HttpStatus.OK);
     }

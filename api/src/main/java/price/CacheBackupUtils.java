@@ -128,5 +128,5 @@ public class CacheBackupUtils {
 		}
 		reader.endObject();
 		return new Product(sku, price, type);
-	}		
+	}	
 }

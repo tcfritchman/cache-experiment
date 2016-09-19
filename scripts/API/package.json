@@ -1,0 +1,14 @@
+{
+  "name": "loadsim",
+  "version": "1.0.0",
+  "description": "",
+  "main": "loadsim.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Fritchman",
+  "license": "ISC",
+  "dependencies": {
+    "request": "^2.75.0"
+  }
+}

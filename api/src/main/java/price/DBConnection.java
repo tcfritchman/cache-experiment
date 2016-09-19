@@ -41,18 +41,17 @@ public class DBConnection {
 			throw new Exception("Item " + sku + " not found");
 		}
 		
-		// Wait longer
+		// Wait longer to simulate network
 		try {
-	        long time = 3000L;
+	        long time = 30L;
 	        Thread.sleep(time);
 	    } catch (InterruptedException e) {
 	        throw new IllegalStateException(e);
 	    }
-		
+	    	
 		return new Product(sku, item.getNumber("Price"), item.getString("Type"));
 	}
 	
-
 	public void putProduct(Product product) throws Exception {
 		Item item = new Item()
 				.withPrimaryKey("SKU", product.getSku())
