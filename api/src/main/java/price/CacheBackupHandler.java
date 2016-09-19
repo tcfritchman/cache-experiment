@@ -30,6 +30,12 @@ public class CacheBackupHandler {
  	final private Funnel<String> strFunnel;
 	final private HashFunction hf;
 
+	/**
+	 * Class constructor - provides utilities for creating, retrieving and modifying
+	 * backups of the cache in an efficient manner and maintaining a pair of bloom filters
+	 * which are used to quickly determine whether an item is in the backup.
+	 * @param backupDir The root directory for backup files
+	 */
 	public CacheBackupHandler(File backupDir) {
 		this.backupDir = backupDir;
 		cachedFile = new File(backupDir, Config.CACHED_FILENAME);
@@ -72,14 +78,30 @@ public class CacheBackupHandler {
 		invalid = BloomFilter.create(strFunnel, Config.CACHE_SIZE, Config.BF_FALSE_PROB);
 	}
 	
+	/** 
+	 * Returns true if cache backup might contain an item
+	 * @param sku SKU of the item in question
+	 * @return Returns true if item might be in backup, false if it isn't.
+	 */
 	public boolean cachedMightContain(String sku) {
 		return cached.mightContain(sku);
 	}
 	
+	/**
+	 * Returns true if item might have been removed from cache backup
+	 * @param sku SKU of the item in question
+	 * @return Returns true if item might have been removed from backup, false if it has not.
+	 */
 	public boolean invalidMightContain(String sku) {
 		return invalid.mightContain(sku);
 	}
 
+	/**
+	 * Write a Product to a backup file. Each file is a partition which items are mapped
+	 * to by a hash function. Each product is also added to the 'cached' bloom filter,
+	 * which is also written to disk.
+	 * @param product The Product to be written to a backup file
+	 */
 	public void backupItem(Product product) {
 		String sku = product.getSku();
 	
@@ -115,6 +137,12 @@ public class CacheBackupHandler {
 		CacheBackupUtils.writeProductsToJSONFile(fileContents, dataFile);
 	}
 	
+	/**
+	 * Attempt to get an item from a backup file. Item is only checked if it is 
+	 * found by the 'cached' bloom filter and not by the 'invalid bloom filter.
+	 * @param sku The SKU of the Product in question
+	 * @return The deserialized Product object
+	 */
 	public Product getItemFromBackup(String sku) {
 	
 		// check if valid entry in backup using bloom filters
@@ -144,6 +172,10 @@ public class CacheBackupHandler {
 		return null;
 	}
 	
+	/**
+	 * Invalidate a backup item by placing it in the 'invalid' bloom filter
+	 * @param product The Product to invalidate
+	 */
 	public void invalidateItemInBackup(Product product) {
 		String sku = product.getSku();
 		
@@ -168,6 +200,10 @@ public class CacheBackupHandler {
 		}	
 	}
 	
+	/**
+	 * Attemts to delete an item from a backup file
+	 * @param product The product to try and remove
+	 */
 	public void removeItemFromBackup(Product product) {
 		String sku = product.getSku();
 		
@@ -183,6 +219,12 @@ public class CacheBackupHandler {
 		CacheBackupUtils.removeProductFromJSONFileBySKU(sku, dataFile);		
 	}
 	
+	/**
+	 * Make a backup of each backup.
+	 * @param suffix A string value which is appended to the filename of each backup to differentiate it from
+	 * the original.
+	 * @throws IOException
+	 */
 	public void copyAndSuffixBackupFiles(String suffix) throws IOException {
 		for (int i = 0; i < Config.BACKUP_PARTITIONS; i++) {
 			File current = new File(backupDir, Config.BACKUP_FILENAME + Integer.toString(i));

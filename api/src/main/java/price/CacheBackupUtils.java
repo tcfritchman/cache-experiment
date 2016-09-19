@@ -16,6 +16,12 @@ import com.google.gson.stream.JsonReader;
 
 public class CacheBackupUtils {
 	
+	/**
+	 * Read and deserialize a JSON file of Products
+	 * @param file The file to read from
+	 * @return Returns an ArrayList<Product> containing each Product object contained
+	 * in the JSON file
+	 */
 	public static ArrayList<Product> readProductsFromJSONFile(File file) {
 		ArrayList<Product> products = new ArrayList<Product>();
 		InputStream in = null;
@@ -40,6 +46,11 @@ public class CacheBackupUtils {
 		return products;
 	}
 	
+	/**
+	 * Serialize an ArrayList of products as JSON objects and write them to a file
+	 * @param products The products to serialize and write
+	 * @param file The file to write to
+	 */
 	public static void writeProductsToJSONFile(ArrayList<Product> products, File file) {
 		FileWriter dataFw = null;
 		try {
@@ -71,6 +82,11 @@ public class CacheBackupUtils {
 		}	
 	}
 	
+	/**
+	 * Remove a JSON Product object from a JSON file
+	 * @param sku The SKU of the product to try removing
+	 * @param file The file to remove from
+	 */
 	public static void removeProductFromJSONFileBySKU(String sku, File file) {			
 		ArrayList<Product> products = null;
 		products = readProductsFromJSONFile(file);

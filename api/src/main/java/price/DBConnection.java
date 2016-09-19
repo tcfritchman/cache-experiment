@@ -11,7 +11,10 @@ public class DBConnection {
 	private AmazonDynamoDBClient client;
 	private DynamoDB dynamoDB;
 	
-	
+	/**
+	 * Connect to the DynamoDB database. Database URL specified by Config.DB_URL
+	 * @throws ResourceUnavailableException
+	 */
 	public void makeConnection() throws ResourceUnavailableException {	
 
 		try { // Connect to DB and get table
@@ -26,6 +29,12 @@ public class DBConnection {
 		}
 	}
 	
+	/**
+	 * Get a product from the database
+	 * @param sku The sku of the product (Primary key)
+	 * @return A Product object
+	 * @throws Exception if not found
+	 */
 	public Product getProduct(String sku) throws Exception {
 		
 		Item item = null;
@@ -52,6 +61,11 @@ public class DBConnection {
 		return new Product(sku, item.getNumber("Price"), item.getString("Type"));
 	}
 	
+	/**
+	 * Add/Update a product in the database
+	 * @param product The product to add/update
+	 * @throws Exception if unsuccessful
+	 */
 	public void putProduct(Product product) throws Exception {
 		Item item = new Item()
 				.withPrimaryKey("SKU", product.getSku())

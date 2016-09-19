@@ -19,16 +19,28 @@ public class CacheRebuilder extends Thread {
 	final private File backupDir;
 	private LoadingCache<String, Product> cache;
 	
+	/**
+	 * Class constructor
+	 * @param backupDir Directory where cache backups will be located
+	 * @param cache A LoadingCache that is this service's cache
+	 */
 	public CacheRebuilder(File backupDir, LoadingCache<String, Product> cache) {
 		this.backupDir = backupDir;
 		this.invalidQueue = new LinkedBlockingQueue<String>();
 		this.cache = cache;
 	}
 	
+	/**
+	 * Entry point to start a new thread
+	 */
 	public void run() {
 		rebuildCache();
 	}
 	
+	/**
+	 * Rebuilds the LoadingCache cache using the backup data files then invalidates any entries
+	 * to the cache whose values were updated during the rebuilding process.
+	 */
 	public void rebuildCache() {
 		System.out.println("Begin rebuilding cache...");
 		
@@ -40,16 +52,8 @@ public class CacheRebuilder extends Thread {
 					CacheBackupUtils.readProductsFromJSONFile(partitionFile);
 				
 			cache.putAll(Maps.uniqueIndex(partitionContents, Product::getSku));
-			
-			// Simulate this actually taking a while....
-			try {
-				Thread.sleep(3000L);
-			} catch (InterruptedException e) {
-				System.out.println("this nonsense was interrupted");
-			}
 		}
 		
-		// Delete all invalid entries from backup and cache
 		while (invalidQueue.isEmpty() == false) {
 			cache.invalidate(invalidQueue.poll());		
 		}
