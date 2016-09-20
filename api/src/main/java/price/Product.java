@@ -3,15 +3,15 @@ package price;
 import java.math.BigDecimal;
 
 public class Product {
-	
+
     private String sku;
     private BigDecimal price;
     private String type;
-    
+
     /**
      * Default constructor
      */
-    public Product() {  	
+    public Product() {
     }
 
     /**
@@ -31,37 +31,37 @@ public class Product {
      * @param sku
      */
     public void setSku(String sku) {
-		this.sku = sku;
-	}
+        this.sku = sku;
+    }
 
     /**
      * Set the item's price
      * @param price
      */
-	public void setPrice(BigDecimal price) {
-		this.price = price;
-	}
-	
-	/**
-	 * Set the item's type
-	 * @param type
-	 */
-	public void setType(String type) {
-		this.type = type;
-	}
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
 
-	/**
-	 * Get the item's SKU
-	 * @return
-	 */
-	public String getSku() {
+    /**
+     * Set the item's type
+     * @param type
+     */
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    /**
+     * Get the item's SKU
+     * @return
+     */
+    public String getSku() {
         return sku;
     }
 
-	/**
-	 * Get the item's price
-	 * @return
-	 */
+    /**
+     * Get the item's price
+     * @return
+     */
     public BigDecimal getPrice() {
         return price;
     }
@@ -72,5 +72,5 @@ public class Product {
      */
     public String getType() {
         return type;
-    }    
+    }
 }
