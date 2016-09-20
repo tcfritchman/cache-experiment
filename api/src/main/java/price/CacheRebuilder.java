@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Logger;
 
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
@@ -18,6 +19,7 @@ public class CacheRebuilder extends Thread {
 	
 	final private File backupDir;
 	private LoadingCache<String, Product> cache;
+	private final static Logger LOGGER = Logger.getLogger(CacheRebuilder.class.getName()); 
 	
 	/**
 	 * Class constructor
@@ -42,7 +44,7 @@ public class CacheRebuilder extends Thread {
 	 * to the cache whose values were updated during the rebuilding process.
 	 */
 	public void rebuildCache() {
-		System.out.println("Begin rebuilding cache...");
+		LOGGER.info("Begin rebuilding cache...");
 		
 		for (int i = 0; i < Config.BACKUP_PARTITIONS; i++) {
 			String partitionFileName = Config.BACKUP_FILENAME + Integer.toString(i) + ".old";
@@ -59,6 +61,6 @@ public class CacheRebuilder extends Thread {
 		}
 			
 		ProductController.isRebuildingCache.set(false);
-		System.out.println("Done rebuilding cache.");	
+		LOGGER.info("Done rebuilding cache.");	
 	}	
 }

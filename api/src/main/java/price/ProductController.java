@@ -2,6 +2,7 @@ package price;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,8 @@ public class ProductController {
 	private final CacheRebuilder cacheRebuilder;
 	private final RemovalListener<String, Product> cacheRemovalListener;
 	private final File backupDir;
+	private final static Logger LOGGER = Logger.getLogger(ProductController.class.getName()); 
+	private Long timeOfLastBloomRefresh = null;
 	
 	public static AtomicBoolean isRebuildingCache;
 	
@@ -40,19 +43,18 @@ public class ProductController {
 		cacheBackupHandler = new CacheBackupHandler(backupDir);
 		
 		try {
-			System.out.println("Duplicating backup files");
+			LOGGER.info("Duplicating backup files");
 			cacheBackupHandler.copyAndSuffixBackupFiles(".old");
-			System.out.println("Finished duplicating backup files");
+			LOGGER.info("Finished duplicating backup files");
 		} catch (Exception e) {
-			System.out.println("Could not make copy of backup files");
+			LOGGER.severe("Could not make copy of backup files");
 		}
 
 		// When item removed from cache, remove from backup too.
 		cacheRemovalListener = new RemovalListener<String, Product>() {
 			public void onRemoval(RemovalNotification<String, Product> removal) {
 				Product product = removal.getValue();
-				System.out.println("item removed from cache: " + product.getSku());
-				
+				LOGGER.info("Item removed from cache: " + product.getSku());
 				cacheBackupHandler.removeItemFromBackup(product);
 			}
 		};
@@ -75,22 +77,19 @@ public class ProductController {
 						
 						return product;
 					}
-				});	
-		
-		
-		//if (Config.BACKUP_ENABLED && Config.CACHING_ENABLED) {
-			// do this on a new thread...
-			ProductController.isRebuildingCache = new AtomicBoolean(true);
-			cacheRebuilder = new CacheRebuilder(backupDir, cache);	
-			cacheRebuilder.start();
+				});			
 
-		//}	
+		ProductController.isRebuildingCache = new AtomicBoolean(true);
+		cacheRebuilder = new CacheRebuilder(backupDir, cache);	
+		cacheRebuilder.start();
 	}
 
     @RequestMapping(value="/product", method=RequestMethod.GET)
     public ResponseEntity<Product> getProductResponse(@RequestParam(value="sku", required=true) String sku) {
     	   	
     	Product product;
+    	
+    	//TODO wait on isRebuildingCache here???
     	
     	if (ProductController.isRebuildingCache.get()) {
     		product = cacheBackupHandler.getItemFromBackup(sku);
@@ -99,25 +98,31 @@ public class ProductController {
     			try {
     				conn.makeConnection();
     			} catch (ResourceUnavailableException e) {
+    				LOGGER.severe("Connection to database failed.");
     	    		return new ResponseEntity<Product>(HttpStatus.SERVICE_UNAVAILABLE);
     			}
     			
     			try {
     				product = conn.getProduct(sku);
     			} catch (Exception e) {
-    				System.out.println("Could not get product " + sku + " from database");
+    				LOGGER.info("Could not get product " + sku + " from database");
     			}
     		}
 		
     	} else { // cache is available
+    		
+    		refreshBFOnInterval(Config.BF_REFRESH_INTERVAL);
+    		
     		try {
         		product = cache.getUnchecked(sku);
         	} catch (Exception e) {
+        		LOGGER.info("Item was not found in database");
         		return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
         	}  	
     	}
     	
 		if (product == null) { // Not found in DB
+			LOGGER.info("Item was not found in database");
 			return new ResponseEntity<Product>(HttpStatus.NOT_FOUND);
 		}
     	
@@ -131,13 +136,14 @@ public class ProductController {
     	try {
     		conn.makeConnection();
     	} catch (ResourceUnavailableException e) {
+			LOGGER.severe("Connection to database failed.");
     		return new ResponseEntity<String>(HttpStatus.SERVICE_UNAVAILABLE);
     	}  	
     	
     	try {
     		conn.putProduct(product);
     	} catch (Exception e) {
-    		System.out.println("couldn't put product in db");
+    		LOGGER.info("couldn't put product " + sku + " in db");
     		return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     	}    	
 
@@ -152,5 +158,18 @@ public class ProductController {
     	}
     	
     	return new ResponseEntity<String>(HttpStatus.OK);
+    }
+    
+    /**
+     * Refresh the bloom filters on an approximate time interval (dependent on how often this function is called)
+     * @param interval Length of interval in milliseconds
+     */
+    private void refreshBFOnInterval(long interval) {
+    	if (timeOfLastBloomRefresh == null || System.currentTimeMillis() - timeOfLastBloomRefresh > interval) {
+    		LOGGER.info("Refreshing bloom filters");
+    		cacheBackupHandler.refreshBloomFilters(cache);
+    		LOGGER.info("Finished refreshing bloom filters");
+    		timeOfLastBloomRefresh = System.currentTimeMillis();
+    	}
     }
 }
