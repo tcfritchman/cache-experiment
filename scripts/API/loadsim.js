@@ -1,6 +1,6 @@
 var request = require('request');
 
-var requests = 100;
+var requests = 10000;
 var skus = 500000;
 
 function makeGetRequest() {

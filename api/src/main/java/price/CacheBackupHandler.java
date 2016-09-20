@@ -1,8 +1,10 @@
 package price;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import static java.nio.file.StandardCopyOption.*;
 import java.util.ArrayList;
@@ -51,9 +53,26 @@ public class CacheBackupHandler {
 			}
 		};
 		
-		cached = BloomFilter.create(strFunnel, Config.CACHE_SIZE, Config.BF_FALSE_PROB);
-		invalid = BloomFilter.create(strFunnel, Config.CACHE_SIZE, Config.BF_FALSE_PROB);
-			
+		InputStream in = null;
+		
+		try {
+			System.out.println("Reading bloom filter backups...");
+			in = new FileInputStream(cachedFile);
+			cached = BloomFilter.readFrom(in, strFunnel);
+			in = new FileInputStream(cachedFile);
+			invalid = BloomFilter.readFrom(in, strFunnel);	
+			System.out.println("Done reading bloom filter backups");
+		} catch (Exception e) {
+			System.out.println("Could not read bloom filters from file. Creating new bloom filters.");
+			try {
+				in.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			cached = BloomFilter.create(strFunnel, Config.CACHE_SIZE, Config.BF_FALSE_PROB);
+			invalid = BloomFilter.create(strFunnel, Config.CACHE_SIZE, Config.BF_FALSE_PROB);
+		}
+	
 		hf = Hashing.md5();
 	}
 	
