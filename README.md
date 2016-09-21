@@ -1,7 +1,7 @@
 # cache-experiment
 
 ### Purpose
-To improve performance of a web service while its cache is being deserialized from a backup file by using a Bloom Filter.
+To improve performance of a web service while its cache is being deserialized from a backup file by using a [Bloom Filter](https://github.com/google/guava/wiki/HashingExplained#bloomfilter).
 
 ### The System
 This service is a RESTful API for retrieving information about products which are stored in an AWS DybamoDB.
@@ -12,6 +12,7 @@ Price changes are triggered by a PUT request which updates the item in the DB. T
 
 To make lookups to the backup more efficient, the data is stored in X number of partition files. SKUs are then mapped to a partition file using a hash function.
 
+![Request Flowchart](https://cloud.githubusercontent.com/assets/5157620/18699044/7a42e68a-7f83-11e6-9244-6754003a4a0a.png "Flowchart")
 
 Restoration from the requires that we use a second thread so as to not block requests to the API. This approach has inherent difficulties regarding accessing shared data between threads. To solve these difficulties my system uses does the following:
 
@@ -19,7 +20,7 @@ Restoration from the requires that we use a second thread so as to not block req
 
 2. While the cache is rebuilding, use a queue to collect item price changes so that once the queue is done rebuilding those items can be invalidated.
 
-
+![Threads diagram](https://cloud.githubusercontent.com/assets/5157620/18699051/86d9e13c-7f83-11e6-9626-0270960d8603.png "Threads diagram")
 
 ### Performance
 These measurements were made on my system (2.4ghz Core i5 linux machine) using the following configuration settings:
